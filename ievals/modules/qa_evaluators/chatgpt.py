@@ -1,5 +1,5 @@
 import os
-import re
+import json
 import logging
 from time import sleep
 import openai
@@ -17,6 +17,9 @@ class ChatGPT_Evaluator(Evaluator):
         self.switch_zh_hans = switch_zh_hans
         if switch_zh_hans:
             self.converter = opencc.OpenCC("t2s.json")
+        self.remove_all_params = False
+        if 'o1' in self.model_name:
+            self.remove_all_params = True
 
     def format_example(self, line, include_answer=True, cot=False):
         example = line["question"]
@@ -88,12 +91,32 @@ class ChatGPT_Evaluator(Evaluator):
                     "content": f"你是一位專業的中文AI助理，以下是關於{subject_name}考試單選題，請選出正確的答案。",
                 }
             ]
+        system_prompt = None
+        if self.remove_all_params:
+            system_prompt = few_shot_prompt[0]['content']
+            few_shot_prompt = []
         answers = list(test_df["answer"])
+        added = set()
+        with open('cache.jsonl', 'r') as f:
+            for line in f:
+                payload = json.loads(line)
+                if 'subject_name' in payload and payload['subject_name'] == subject_name:
+                    added.add(payload['row_id'])
+                    correct_num += payload['correct']
+                    result.append(payload['response'])
+                    score.append(payload['correct'])
+
         for row_index, row in tqdm(
             test_df.iterrows(), total=len(test_df), dynamic_ncols=True
         ):
+            if row_index in added:
+                continue
             question = self.format_example(row, include_answer=False)
             full_prompt = few_shot_prompt + question
+            if system_prompt:
+                full_prompt[-1]["content"] = (
+                    system_prompt + '\n' + full_prompt[-1]["content"]
+                )
             if not few_shot:
                 full_prompt[-1]["content"] = (
                     f"以下是關於{subject_name}考試單選題，請選出正確的答案。\n\n"
@@ -106,14 +129,18 @@ class ChatGPT_Evaluator(Evaluator):
                     full_prompt[idx]["content"] = self.converter.convert(
                         prompt["content"]
                     )
-
+            params = {
+                'temperature': 0.0,
+                'max_tokens': 800
+            }
+            if self.remove_all_params:
+                params = {}
             while response is None and timeout_counter <= 30:
                 try:
                     response = self.client.chat.completions.create(
                         model=self.model_name,
                         messages=full_prompt,
-                        temperature=0.0,
-                        max_tokens=800,
+                        **params
                     )
                 except Exception as msg:
                     if "timeout=600" in str(msg):
@@ -125,6 +152,7 @@ class ChatGPT_Evaluator(Evaluator):
                 response_str = ""
             else:
                 response_str = response.choices[0].message.content
+            raw_response = response_str
             if cot:
                 ans_list = self.cot_match_response_choice(response_str,
                             is_simplified= self.switch_zh_hans)
@@ -148,6 +176,19 @@ class ChatGPT_Evaluator(Evaluator):
                         correct = 0
                 else:
                     correct = 0
+
+            with open('cache.jsonl', 'a') as f:
+                f.write(json.dumps({
+                    'model':self.model_name,
+                    'question': question,
+                    'prompt': full_prompt[-1],
+                    'raw_answer': raw_response,
+                    'response': response_str,
+                    'correct': correct,
+                    'subject_name': subject_name,
+                    'row_id': row_index,
+                    'answer': row["answer"]
+                })+'\n')
             if save_result_dir:
                 result.append(response_str)
                 score.append(correct)

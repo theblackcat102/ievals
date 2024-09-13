@@ -87,7 +87,7 @@ def get_evaluator(model_name, series=""):
     l_model_name = model_name.lower()
     if "gemini" in model_name:
         return Gemini_Evaluator
-    elif "gpt-" in model_name:
+    elif "gpt-" in model_name or 'o1-' in model_name:
         # its possible to match gpt-3.5-instruct,
         # but we don't really want to sacrifice more fixed params for that
         return ChatGPT_Evaluator
