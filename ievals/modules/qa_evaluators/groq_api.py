@@ -138,6 +138,7 @@ class GroqEvaluator(Evaluator):
                     logging.error(msg)
                     sleep(5)
                     continue
+            sleep(1)
             if response == None:
                 response_str = ""
             else:

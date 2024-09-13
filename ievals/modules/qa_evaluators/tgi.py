@@ -163,9 +163,13 @@ class TGI_Evaluator(Evaluator):
             if response == None:
                 response_str = ""
             else:
-                response_str = response.json()["generated_text"].split(
-                    self.messageEndToken
-                )[0]
+                try:
+                    response_str = response.json()["generated_text"].split(
+                        self.messageEndToken
+                    )[0]
+                except KeyError as e:
+                    print(e)
+                    response_str = ""
             if cot:
                 ans_list = self.cot_match_response_choice(response_str, is_simplified=self.switch_zh_hans)
                 if len(ans_list) == 0:

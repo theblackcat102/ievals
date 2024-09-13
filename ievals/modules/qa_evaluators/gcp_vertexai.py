@@ -10,8 +10,8 @@ import vertexai.preview.generative_models as generative_models
 from .evaluator import Evaluator
 from ..answer_parser import cot_match_response_choice
 from ...helper import retry_with_exponential_backoff
-
-vertexai.init(project=os.environ['GCP_PROJECT_NAME'], location="us-central1")
+if 'GCP_PROJECT_NAME' in os.environ:
+    vertexai.init(project=os.environ['GCP_PROJECT_NAME'], location="us-central1")
 
 class Vertex_Evaluator(Evaluator):
 
