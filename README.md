@@ -23,8 +23,8 @@ Currently, we only support evaluation for [TMMLU+](https://huggingface.co/datase
 
                    Model                    | humanities | social sciences |   STEM   |  Others  | Average 
 -----------------------------------------------------------------------------------------------------------
-deepseek-chat                               |  73.19   |  81.93   |  82.93   |  74.41   |  78.11  
-Qwen/Qwen2.5-72B-Instruct-Turbo             |  67.59   |  79.36   |  82.57   |  72.65   |  75.54  
+deepseek-v3                               |  73.19   |  81.93   |  82.93   |  74.41   |  78.11  
+Qwen/Qwen2.5-72B-Instruct             |  67.59   |  79.36   |  82.57   |  72.65   |  75.54  
 gpt-4o-2024-08-06                           |  65.48   |  78.23   |  81.39   |  71.24   |  74.08  
 claude-3-5-sonnet-20240620                  |  73.23   |  78.27   |  68.50   |  69.35   |  72.34  
 gemini-2.0-flash-lite-preview-02-05         |  64.66   |  73.48   |  70.00   |  63.90   |  68.01  
@@ -34,7 +34,7 @@ gemini-1.5-pro                              |  61.84   |  70.29   |  66.18   |  
 gpt-4o-mini-2024-07-18                      |  55.01   |  67.09   |  73.16   |  61.36   |  64.15  
 mistralai/Mistral-Small-24B-Instruct-2501   |  54.56   |  68.32   |  73.25   |  59.25   |  63.85  
 llama-3.1-70b-versatile                     |  64.94   |  70.14   |  58.63   |  61.33   |  63.76  
-Qwen/Qwen2.5-7B-Instruct-Turbo              |  54.42   |  64.51   |  68.01   |  58.83   |  61.44  
+Qwen/Qwen2.5-7B-Instruct              |  54.42   |  64.51   |  68.01   |  58.83   |  61.44  
 yentinglin/Llama-3-Taiwan-8B-Instruct       |  61.51   |  67.61   |  52.05   |  58.60   |  59.94  
 claude-3-sonnet-20240229                    |  52.06   |  59.38   |  49.87   |  51.64   |  53.24  
 Qwen2-7B-Instruct                           |  55.66   |  66.40   |  27.18   |  55.32   |  51.14  
@@ -42,7 +42,7 @@ gemma2-9b-it                                |  45.38   |  55.76   |  49.89   |  
 claude-3-haiku-20240307                     |  47.48   |  54.48   |  48.47   |  48.77   |  49.80  
 gemini-1.5-flash                            |  42.99   |  53.42   |  53.47   |  46.56   |  49.11  
 reka-flash                                  |  44.07   |  52.68   |  46.04   |  43.43   |  46.56  
-meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo |  44.03   |  50.95   |  42.75   |  45.19   |  45.73  
+meta-llama/Meta-Llama-3.1-8B-Instruct |  44.03   |  50.95   |  42.75   |  45.19   |  45.73  
 mixtral-8x7b-32768                          |  44.75   |  50.34   |  32.60   |  43.76   |  42.86  
 meta-llama/Llama-3-70b-chat-hf              |  37.50   |  47.02   |  34.44   |  39.51   |  39.62  
 google/gemma-7b-it                          |  34.00   |  35.70   |  31.89   |  33.79   |  33.84  
