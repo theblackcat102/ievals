@@ -12,7 +12,10 @@ class ChatGPT_Evaluator(Evaluator):
     def __init__(self, choices, k, api_key, model_name, switch_zh_hans=False):
         super(ChatGPT_Evaluator, self).__init__(choices, model_name, k)
         openai.api_key = api_key
-        self.client = openai.OpenAI(api_key=api_key)
+        if "CUSTOM_API_URL" in os.environ:
+            self.client = openai.OpenAI(api_key=api_key, base_url=os.environ["CUSTOM_API_URL"])
+        else:
+            self.client = openai.OpenAI(api_key=api_key)
         self.converter = None
         self.switch_zh_hans = switch_zh_hans
         if switch_zh_hans:
@@ -100,12 +103,11 @@ class ChatGPT_Evaluator(Evaluator):
         with open('cache.jsonl', 'r') as f:
             for line in f:
                 payload = json.loads(line)
-                if 'subject_name' in payload and payload['subject_name'] == subject_name:
+                if 'subject_name' in payload and payload['subject_name'] == subject_name and self.model_name == payload['model']:
                     added.add(payload['row_id'])
                     correct_num += payload['correct']
                     result.append(payload['response'])
                     score.append(payload['correct'])
-
         for row_index, row in tqdm(
             test_df.iterrows(), total=len(test_df), dynamic_ncols=True
         ):
@@ -148,6 +150,7 @@ class ChatGPT_Evaluator(Evaluator):
                     logging.error(msg)
                     sleep(5)
                     continue
+
             if response == None:
                 response_str = ""
             else:
@@ -182,6 +185,7 @@ class ChatGPT_Evaluator(Evaluator):
                     'model':self.model_name,
                     'question': question,
                     'prompt': full_prompt[-1],
+                    'reasoning': response.choices[0].message.reasoning_content,
                     'raw_answer': raw_response,
                     'response': response_str,
                     'correct': correct,

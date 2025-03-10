@@ -139,8 +139,8 @@ def get_parser():
         default="",
         help="end-of-sentence token usually its <|endoftext|> or </s>, but you have to verify from hf model tokenizer.json",
     )
-
     parser.add_argument("--hf_cache", type=str, default="", help="huggingface cache")
+    parser.add_argument("--category", type=str, default="all", help="high level category to filter: STEM, humanities, social science..")
     return parser
 
 
@@ -221,6 +221,7 @@ def main():
         few_shot=args.top_k > 0,
         cache_path=cache_path,
         postfix_name=postfix,
+        category=args.category,
         switch_zh_hans=args.switch_zh_hans,
     )
 

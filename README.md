@@ -2,6 +2,17 @@
 
 <p align="center"> <img src="resources/ieval_cover.png" style="width: 50%; max-width: 400px" id="title-icon">       </p>
 
+Note: to all users, who wish to benchmark their own models, please use VLLM or sglang or text-generation-inference to setup an inference endpoint and export the variable CUSTOM_API_URL="your-endpoint-link/v1" and use '--series openai_chat' when evaluating
+
+For example using openrouter openai compatible url
+
+```
+export CUSTOM_API_URL="https://openrouter.ai/api/v1"
+ieval --series openai_chat --api_key XXX <your model name>
+```
+
+This is much faster and the only official method to benchmark later models
+
 
 iEvals is a framework for evaluating chinese large language models (LLMs), especially performance in traditional chinese domain. Our goal was to provide an easy to setup and fast evaluation library for guiding the performance/use on existing chinese LLMs.
 
@@ -10,7 +21,7 @@ Currently, we only support evaluation for [TMMLU+](https://huggingface.co/datase
 # Installation
 
 ```bash
-pip install git+https://github.com/ikala-corp/ievals.git
+pip install git+https://github.com/theblackcat102/ievals.git
 ```
 
 # Usage

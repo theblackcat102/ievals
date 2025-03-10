@@ -25,6 +25,7 @@ def run_exp(
     evaluator,
     model_name,
     dataset,
+    category='all',
     postfix_name="tgi",
     cache_path=".cache",
     split_name="test",
@@ -41,6 +42,12 @@ def run_exp(
         save_result_dir = f"{cache_path}/{model_name_path}"
 
     task_list, subject2name, subject2category = get_exp_setting(dataset)
+    from ievals.settings import categories
+    inverted_categories = {}
+    for big_cat, cats in categories.items():
+        for cat in cats:
+            inverted_categories[cat] = big_cat
+
     postfix = model_name.split("/")[-1]
     prefix_name = dataset.split("/")[-1]
     result_cache = f"{prefix_name}_{postfix_name}.tsv"
@@ -52,6 +59,13 @@ def run_exp(
         df.columns = ["model_name", "subject", "score"]
         finished_subjects = df["subject"].tolist()
         task_list = [t for t in task_list if t not in finished_subjects]
+    if category != 'all':
+        _task_list = []
+        for subject in task_list:
+            if inverted_categories[subject2category[subject]] == category:
+                _task_list.append(subject)
+        task_list = _task_list
+
     output_filename = ""
     # TODO: absract out the dataset-task logic, as this is likely
     #       limited under multi subject task only

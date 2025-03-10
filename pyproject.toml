@@ -1,6 +1,6 @@
 [project]
 name = "ievals"
-version = "1.0.1"
+version = "1.1.0"
 requires-python = ">=3.9"
 readme = "README.md"
 dependencies = [
@@ -10,14 +10,14 @@ dependencies = [
     "pandas==2.1.3",
     "numpy",
     "pandas",
-    "google-generativeai==0.3.1",
-    "google-cloud-aiplatform==1.54.1",
+    "google-generativeai>=0.3.1",
+    "google-cloud-aiplatform>=1.54.1",
     "OpenCC==1.1.7",
     "tqdm==4.66.1"
 ]
 
 [project.urls]
-repository = "https://github.com/ikala-corp/ievals"
+repository = "https://github.com/theblackcat102/ievals"
 
 [project.optional-dependencies]
 formatters = [

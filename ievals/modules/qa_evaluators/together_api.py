@@ -130,7 +130,7 @@ class TogetherEvaluator(Evaluator):
                         messages=full_prompt,
                         model=self.model_name,
                         temperature=0.0,
-                        max_tokens=800 if cot else 200,
+                        max_tokens=1024 if cot else 1024,
                     )
                 except Exception as msg:
                     if "timeout=600" in str(msg):
