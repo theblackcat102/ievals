@@ -155,6 +155,14 @@ class ChatGPT_Evaluator(Evaluator):
                 response_str = ""
             else:
                 response_str = response.choices[0].message.content
+            reasoning = None
+            if '</think>' in response_str:
+                reasoning, response_str = response_str.split('</think>', maxsplit=True)
+            elif '</reasoning>' in response_str:
+                reasoning, response_str = response_str.split('</reasoning>', maxsplit=True)
+            if hasattr(response.choices[0].message, 'reasoning_content'):
+                reasoning = response.choices[0].message.reasoning_content
+
             raw_response = response_str
             if cot:
                 ans_list = self.cot_match_response_choice(response_str,
@@ -185,7 +193,7 @@ class ChatGPT_Evaluator(Evaluator):
                     'model':self.model_name,
                     'question': question,
                     'prompt': full_prompt[-1],
-                    'reasoning': response.choices[0].message.reasoning_content,
+                    'reasoning': reasoning,
                     'raw_answer': raw_response,
                     'response': response_str,
                     'correct': correct,
