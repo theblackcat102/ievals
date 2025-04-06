@@ -5,7 +5,7 @@ from datasets import load_dataset
 
 
 def get_exp_setting(dataset):
-    if "ikala/tmmlu" in dataset.lower():
+    if "syntaxsynth/tmmluplus" in dataset.lower():
         from .settings import task_list, subject2name, subject2category
 
         return task_list, subject2name, subject2category
@@ -65,7 +65,6 @@ def run_exp(
             if inverted_categories[subject2category[subject]] == category:
                 _task_list.append(subject)
         task_list = _task_list
-
     output_filename = ""
     # TODO: absract out the dataset-task logic, as this is likely
     #       limited under multi subject task only
@@ -75,6 +74,7 @@ def run_exp(
         test_df = pd.DataFrame([dict(row) for row in test])
         dev = load_dataset(dataset, task)["train"]
         dev_df = pd.DataFrame([dict(row) for row in dev])
+        print(task, len(test))
 
         accuracy = evaluator.eval_subject(
             zh_name,

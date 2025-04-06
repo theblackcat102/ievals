@@ -10,9 +10,9 @@ if __name__ == "__main__":
         category = subject2category[subject]
         if category not in category_counts:
             category_counts[category] = 0
-        test = load_dataset("ikala/tmmluplus", subject)["test"]
-        dev = load_dataset("ikala/tmmluplus", subject)["train"]
-        val = load_dataset("ikala/tmmluplus", subject)["validation"]
+        test = load_dataset("syntaxsynth/tmmluplus", subject)["test"]
+        dev = load_dataset("syntaxsynth/tmmluplus", subject)["train"]
+        val = load_dataset("syntaxsynth/tmmluplus", subject)["validation"]
         print(len(val), len(test), len(dev))
         total += len(val) + len(test) + len(dev)
         total_test += len(test)

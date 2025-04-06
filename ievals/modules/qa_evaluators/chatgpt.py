@@ -6,6 +6,7 @@ import openai
 import opencc
 from tqdm import tqdm
 from .evaluator import Evaluator
+from ...helper import retry_with_exponential_backoff
 
 
 class ChatGPT_Evaluator(Evaluator):
@@ -48,6 +49,7 @@ class ChatGPT_Evaluator(Evaluator):
                 {"role": "user", "content": example},
             ]
 
+
     def generate_few_shot_prompt(self, subject, dev_df, cot=False):
         prompt = [
             {
@@ -69,6 +71,16 @@ class ChatGPT_Evaluator(Evaluator):
                 prompt += tmp
 
         return prompt
+
+    @retry_with_exponential_backoff
+    def prompt(self, full_prompt, params):
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=full_prompt,
+            **params
+        )
+        assert response.choices[0].message.content is not None
+        return response
 
     def eval_subject(
         self,
@@ -133,23 +145,12 @@ class ChatGPT_Evaluator(Evaluator):
                     )
             params = {
                 'temperature': 0.0,
-                'max_tokens': 800
+                'max_tokens': 5120
             }
             if self.remove_all_params:
                 params = {}
-            while response is None and timeout_counter <= 30:
-                try:
-                    response = self.client.chat.completions.create(
-                        model=self.model_name,
-                        messages=full_prompt,
-                        **params
-                    )
-                except Exception as msg:
-                    if "timeout=600" in str(msg):
-                        timeout_counter += 1
-                    logging.error(msg)
-                    sleep(5)
-                    continue
+
+            response = self.prompt(full_prompt, params)
 
             if response == None:
                 response_str = ""

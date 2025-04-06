@@ -47,27 +47,30 @@ def process_single_file(filename, inverted_categories):
     
     return data
 
-
 def format_leaderboard(model_scores):
     # Fixed categories order
     categories = ["humanities", "social sciences", "STEM", "Others", "Average"]
     
-    # Calculate max lengths for formatting
-    max_model_length = max(len(score["model_name"]) for score in model_scores)
-    header = f"{'Model':^{max_model_length}} | " + " | ".join(f"{cat:^8}" for cat in categories)
-    separator = "-" * len(header)
+    # Start with the header row
+    header = "| Model | " + " | ".join(categories) + " |"
+    # Create the separator row with proper alignment indicators
+    # Use :--- for left align, :---: for center align, ---: for right align
+    separator = "| " + "-" * 5 + " | " + " | ".join(["---:" for _ in categories]) + " |"
     
     leaderboard = [header, separator]
+    
+    # Format each row
     for score in model_scores:
         model_name = score["model_name"]
         try:
-            scores = [f"{score[cat]:^8.2f}" for cat in categories]
-            row = f"{model_name:<{max_model_length}} | " + " | ".join(scores)
+            # Format scores with 2 decimal places
+            scores = [f"{score.get(cat, 0):.2f}" for cat in categories]
+            row = f"| {model_name} | " + " | ".join(scores) + " |"
             leaderboard.append(row)
         except KeyError as e:
-            print(e)
+            print(f"Error with model {model_name}: {e}")
+    
     return "\n".join(leaderboard)
-
 
 def main():
     parser = get_parser()

@@ -111,7 +111,7 @@ def get_parser():
     parser = argparse.ArgumentParser(description="Run TMMLU+ evals")
     parser.add_argument("model", type=str, help="Name of the eval model")
     parser.add_argument("--series", type=str, default="")
-    parser.add_argument("--dataset", type=str, default="ikala/tmmluplus")
+    parser.add_argument("--dataset", type=str, default="syntaxsynth/tmmluplus")
     parser.add_argument("--choices", type=str, default="A,B,C,D")
     parser.add_argument("--top_k", type=int, default=0)
     parser.add_argument("--api_key", type=str, default=None)
@@ -196,7 +196,7 @@ def main():
             model_name=model_name,
             switch_zh_hans=args.switch_zh_hans,
         )
-    postfix = model_name.split("/")[-1]
+    postfix = model_name.split("/")[-1].replace(':free', '')
     if args.top_k > 0:
         postfix += f"_top_{args.top_k}"
     if args.cot:

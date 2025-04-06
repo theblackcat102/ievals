@@ -34,7 +34,7 @@ def retry_with_exponential_backoff(
         anthropic.RateLimitError,
         urllib.error.HTTPError,
         urllib.error.URLError,
-        ValueError, IndexError, UnboundLocalError
+        ValueError, IndexError, UnboundLocalError, TypeError
     )
     if has_groq:
         errors_tuple += (groq.RateLimitError,

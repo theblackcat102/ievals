@@ -1,12 +1,9 @@
-import re
 import os
 import opencc
-import logging
 from tqdm import tqdm
-from time import sleep
 import vertexai
-from vertexai.preview.generative_models import GenerativeModel
-import vertexai.preview.generative_models as generative_models
+from google import genai
+from google.genai import types
 from .evaluator import Evaluator
 from ..answer_parser import cot_match_response_choice
 from ...helper import retry_with_exponential_backoff
@@ -15,16 +12,28 @@ if 'GCP_PROJECT_NAME' in os.environ:
 
 class Vertex_Evaluator(Evaluator):
 
-    SAFETY_SETTINGS={
-            generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: generative_models.HarmBlockThreshold.BLOCK_NONE,
-            generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: generative_models.HarmBlockThreshold.BLOCK_NONE,
-            generative_models.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: generative_models.HarmBlockThreshold.BLOCK_NONE,
-            generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_NONE,
-        }
+    SAFETY_SETTINGS=[types.SafetySetting(
+        category="HARM_CATEGORY_HATE_SPEECH",
+        threshold="OFF"
+        ),types.SafetySetting(
+        category="HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold="OFF"
+        ),types.SafetySetting(
+        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold="OFF"
+        ),types.SafetySetting(
+        category="HARM_CATEGORY_HARASSMENT",
+        threshold="OFF"
+        )]
 
-    def __init__(self, choices, k, api_key, model_name, switch_zh_hans=False):
+    def __init__(self, choices, k, api_key=None, model_name='gemini-1.5-flash', switch_zh_hans=False):
         super(Vertex_Evaluator, self).__init__(choices, model_name, k)
-        self.model = GenerativeModel(model_name)
+        self.client = genai.Client(
+            vertexai=True,
+            project=os.environ['GCP_PROJECT_NAME'],
+            location="us-central1",
+        )
+        # self.model = GenerativeModel(model_name)
 
         self.model_name = model_name
         self.converter = None
@@ -75,26 +84,97 @@ class Vertex_Evaluator(Evaluator):
             prompt += tmp
         return prompt
 
+    def convert_prompt_to_contents(self, prompt):
+        """Convert the old prompt format to the new contents format for the Vertex AI API"""
+        contents = []
+        current_content = None
+        current_role = None
+        
+        for message in prompt:
+            role = message["role"]
+            content = message["content"]
+            
+            # Convert 'system' role to 'user' as Vertex AI doesn't have a system role
+            if role == "system":
+                role = "user"
+            
+            # Map to the new API's role naming
+            if role == "user":
+                api_role = "user"
+            elif role == "assistant":
+                api_role = "model"
+            else:
+                api_role = role
+            
+            # If this is a new role, create a new content object
+            if api_role != current_role:
+                if current_content is not None:
+                    contents.append(current_content)
+                
+                current_content = types.Content(
+                    role=api_role,
+                    parts=[types.Part.from_text(text=content)]
+                )
+                current_role = api_role
+            else:
+                # Same role, append to parts
+                current_content.parts.append(types.Part.from_text(text=content))
+        
+        # Add the last content object if it exists
+        if current_content is not None:
+            contents.append(current_content)
+        
+        return contents
+    
     @retry_with_exponential_backoff
     def infer_with_backoff(self, prompt, max_tokens=1024, temperature=0.0, top_p=1, top_k=1):
-        result = self.model.generate_content(
-                prompt,
-                generation_config={
-                    "max_output_tokens": int(max_tokens),
-                    "temperature": float(temperature),
-                    "top_p": float(top_p),
-                    "top_k": int(top_k)
-                },
-                safety_settings=self.SAFETY_SETTINGS,
-                stream=False
-        ).candidates[0].content.parts[0].text
+        # Convert the prompt to the new format
+        if isinstance(prompt, list):
+            # This is the old format with roles
+            contents = self.convert_prompt_to_contents(prompt)
+        else:
+            # This is already in string format (from the text array in eval_subject)
+            print(prompt)
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[types.Part.from_text(text=prompt)]
+                )
+            ]
+        
+        # Setup generation config
+        generate_content_config = types.GenerateContentConfig(
+            temperature=float(temperature),
+            top_p=float(top_p),
+            top_k=int(top_k),
+            max_output_tokens=int(max_tokens),
+            safety_settings=self.SAFETY_SETTINGS
+        )
+        
+        # Generate content
+        response = self.client.models.generate_content(
+            model=self.model_name,
+            contents=contents,
+            config=generate_content_config
+        )
+        
+        # Get the result text
+        result = response.text
+        
+        # Count tokens for both input and output
+        input_tokens = self.client.models.count_tokens(model=self.model_name, contents=contents).total_tokens
+        output_tokens = self.client.models.count_tokens(model=self.model_name, contents=[
+            types.Content(role="model", parts=[types.Part.from_text(text=result)])
+        ]).total_tokens
+        
         res_info = {
             "input": prompt,
             "output": result,
-            "num_input_tokens": self.model.count_tokens(prompt).total_tokens,
-            "num_output_tokens": self.model.count_tokens(result).total_tokens,
+            "num_input_tokens": input_tokens,
+            "num_output_tokens": output_tokens,
             "logprobs": []  # NOTE: currently the Gemini API does not provide logprobs
         }
+        
         return result, res_info
 
 
@@ -133,25 +213,11 @@ class Vertex_Evaluator(Evaluator):
                     f"以下是關於{subject_name}考試單選題，請選出正確的答案。\n\n"
                     + full_prompt[-1]["content"]
                 )
-            response = None
-            timeout_counter = 0
-            text = []
-            prev_role = ""
             for prompt in full_prompt:
-                if prompt["role"] == "system":
-                    text.append(prompt["content"] + "\n")
-                elif prompt["role"] == "user":
-                    if prev_role == "system":
-                        text[-1] += "問題: " + prompt["content"] + "\n"
-                    else:
-                        text.append("問題: " + prompt["content"] + "\n")
-                elif prompt["role"] == "assistant":
-                    text.append(prompt["content"] + "\n")
-                prev_role = prompt["role"]
-            if self.converter:
-                text = [self.converter.convert(seg) for seg in text]
+                if self.converter:
+                    prompt["content"] = self.converter.convert(prompt["content"])
 
-            response_str, response = self.infer_with_backoff(text, max_tokens=512, temperature=0)
+            response_str, _ = self.infer_with_backoff(full_prompt, max_tokens=512, temperature=0)
 
             if cot:
                 ans_list = cot_match_response_choice(response_str,
